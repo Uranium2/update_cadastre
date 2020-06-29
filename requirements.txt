@@ -1,2 +1,5 @@
 boto3==1.14.2
 pandas==1.0.4
+pymysql==0.9.3
+requests==2.24.0
+beautifulsoup4==4.9.1
