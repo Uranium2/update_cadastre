@@ -1,14 +1,14 @@
-import pymysql
-import csv
 import os
+import csv
+import gzip
+import pymysql
 import datetime
 import requests
-import gzip
-import csv
 import pandas as pd
 
 from bs4 import BeautifulSoup
 from datetime import datetime
+
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 foldername = os.path.basename(dir_path)
@@ -28,12 +28,30 @@ cursor = conn.cursor()
 currentDirectory = os.path.dirname(os.path.realpath(__file__))
 now = datetime.now()
 
+
 def get_url(year):
+    """ Get url's dataset from datagouv.fr
+
+    Args:
+        year [Int]: Get url dataset from specify year.
+
+    Returns:
+        url_cadastre [String]: Return cadastre URL.
+    """
     url_cadastre = "https://cadastre.data.gouv.fr/data/etalab-dvf/latest/csv/{}/departements/".format(year)
     print(url_cadastre)
     return url_cadastre
 
+
 def get_date_cadastre(year):
+    """ Get cadastre's date.
+
+    Args:
+        year [Int]: Get date dataset from specify year.
+
+    Returns:
+        date [String]: Get information date.
+    """
     response = requests.get(get_url(year), headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
     res = soup.find_all('a', href=True)
@@ -42,7 +60,16 @@ def get_date_cadastre(year):
     print("get_date_cadastre: {}".format(date))
     return date
 
+
 def check_cadastre_update(year):
+    """ Check if a new cadastre has been released on datagouv.fr
+
+    Args:
+        year [Int]: Check new dataset from specify year.
+
+    Returns:
+        Bool [Boolean]: Return if there is a new dataset available or not.
+    """
     file_path = os.path.join(currentDirectory, "{}.txt".format(year))
     try:
         text_file = open(file_path)
@@ -64,7 +91,10 @@ def check_cadastre_update(year):
         print("No need to update")
         return False
 
+
 def main_process():
+    """ If there is a new dataset, send it to RDS.
+    """
     print("year: {}".format(year))
     print("DL file")
     filename = "75.csv.gz"
@@ -76,7 +106,7 @@ def main_process():
     with gzip.open(local_csv, mode="rt", encoding='utf-8') as f:
         df = pd.read_csv(f)
         
-        # Pre traitement
+        # Pre-Processing
         df = df[["date_mutation", "code_postal", "valeur_fonciere", "code_type_local", "surface_reelle_bati", "nombre_pieces_principales", "surface_terrain", "longitude", "latitude"]]
         df = df.fillna(0)
         df = df.drop_duplicates()
@@ -94,4 +124,5 @@ def main_process():
 for year in range(2015, datetime.now().year): 
     print(year)
     if check_cadastre_update(year):
-        main_process()        
+        main_process()
+   
